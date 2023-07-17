@@ -13,7 +13,7 @@
 #include "EmonLib.h"
 #include <Adafruit_ADS1X15.h>
 
-Adafruit_ADS1115 adc;
+Adafruit_ADS1015 adc;
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"
@@ -33,6 +33,8 @@ void EnergyMonitor::voltage(unsigned int _inPinV, double _VCAL, double _PHASECAL
     Serial.println("Failed to initialize ADS.");
     while (1);
   }
+
+  adc.setDataRate(RATE_ADS1015_3300SPS);
 
   inPinV = _inPinV;
   VCAL = _VCAL;
@@ -151,9 +153,9 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
     // B) Apply digital low pass filters to extract the 2.5 V or 1.65 V dc offset,
     //     then subtract this - signal is now centred on 0 counts.
     //-----------------------------------------------------------------------------
-    offsetV = offsetV + ((sampleV-offsetV)/1024);
+    offsetV = offsetV + ((sampleV-offsetV)/(ADC_COUNTS>>1));
     filteredV = sampleV - offsetV;
-    offsetI = offsetI + ((sampleI-offsetI)/1024);
+    offsetI = offsetI + ((sampleI-offsetI)/(ADC_COUNTS>>1));
     filteredI = sampleI - offsetI;
 
     //-----------------------------------------------------------------------------
@@ -201,15 +203,15 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
   double V_RATIO = VCAL *((SupplyVoltage/1000.0) / (ADC_COUNTS));
   Vrms = V_RATIO * sqrt(sumV / numberOfSamples);
 
-  Serial.println(" ");
-  Serial.println("Vrms: " + String(Vrms) + "V");
-  Serial.println("V_RATIO: " + String(V_RATIO) + "");
-  Serial.println("VCAL: " + String(VCAL) + "");
-  Serial.println("ADC_COUNTS: " + String(ADC_COUNTS) + " ");
-  Serial.println("SupplyVoltage: " + String(SupplyVoltage) + " ");
-  Serial.println("numberOfSamples: " + String(numberOfSamples) + " ");
-  Serial.println("sumV: " + String(sumV) + " ");
-  Serial.println(" ");
+  // Serial.println(" ");
+  // Serial.println("Vrms: " + String(Vrms) + "V");
+  // Serial.println("V_RATIO: " + String(V_RATIO) + "");
+  // Serial.println("VCAL: " + String(VCAL) + "");
+  // Serial.println("ADC_COUNTS: " + String(ADC_COUNTS) + " ");
+  // Serial.println("SupplyVoltage: " + String(SupplyVoltage) + " ");
+  // Serial.println("numberOfSamples: " + String(numberOfSamples) + " ");
+  // Serial.println("sumV: " + String(sumV) + " ");
+  // Serial.println(" ");
 
   double I_RATIO = ICAL *((SupplyVoltage/1000.0) / (ADC_COUNTS));
   Irms = I_RATIO * sqrt(sumI / numberOfSamples);
@@ -243,7 +245,7 @@ double EnergyMonitor::calcIrms(unsigned int Number_of_Samples)
 
     // Digital low pass filter extracts the 2.5 V or 1.65 V dc offset,
     //  then subtract this - signal is now centered on 0 counts.
-    offsetI = (offsetI + (sampleI-offsetI)/1024);
+    offsetI = (offsetI + (sampleI-offsetI)/(ADC_COUNTS>>1));
     filteredI = sampleI - offsetI;
 
     // Root-mean-square method current
